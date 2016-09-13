@@ -1,2 +1,2 @@
-# dl_conv
-Implemetations of famous convolutional neural network in deep learning.
+# Alexnet using Tensorflow
+Implemetations of alexnet using Tensorflow on mnist and cifar10.
