@@ -1,3 +1,7 @@
+"""
+This is simple Alexnet train implementation modified for Kaggle mnist data.
+"""
+
 import time
 import tensorflow as tf
 import numpy as np
