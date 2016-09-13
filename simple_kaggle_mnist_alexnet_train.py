@@ -1,7 +1,7 @@
 import time
 import tensorflow as tf
 import numpy as np
-import kaggle_mnist_loader as loader
+import kaggle_mnist_input as loader
 
 FLAGS = tf.app.flags.FLAGS
 
