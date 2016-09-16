@@ -4,22 +4,27 @@ This is simple Alexnet train implementation modified for Kaggle mnist data.
 
 import time
 import tensorflow as tf
-import numpy as np
 import kaggle_mnist_input as loader
+import os
+import csv
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('training_epoch', 10, "training epoch")
+tf.app.flags.DEFINE_integer('training_epoch', 30, "training epoch")
 tf.app.flags.DEFINE_integer('batch_size', 128, "batch size")
 tf.app.flags.DEFINE_integer('validation_interval', 20, "validation interval")
 
 tf.app.flags.DEFINE_float('dropout_keep_prob', 0.5, "dropout keep prob")
-tf.app.flags.DEFINE_float('learning_rate', 0.001, "learning rate")
-tf.app.flags.DEFINE_float('momentum', 0.9, "momentum")
-tf.app.flags.DEFINE_float('weight_decay', 0.0005, "weight decay")
+tf.app.flags.DEFINE_float('learning_rate', 0.0001, "learning rate")
+tf.app.flags.DEFINE_float('rms_momentum', 0.9, "rms optimizer momentum")
+tf.app.flags.DEFINE_float('rms_decay', 0.9, "rms optimizer decay")
+tf.app.flags.DEFINE_float('weight_decay', 0.0005, "l2 regularization weight decay")
 tf.app.flags.DEFINE_string('train_path', '/tmp/train.csv', "path to download training data")
 tf.app.flags.DEFINE_string('test_path', '/tmp/test.csv', "path to download test data")
 tf.app.flags.DEFINE_integer('validation_size', 2000, "validation size in training data")
+tf.app.flags.DEFINE_string('save_name', os.getcwd() + '/var.ckpt', "path to save variables")
+tf.app.flags.DEFINE_boolean('is_train', True, "True for train, False for test")
+tf.app.flags.DEFINE_string('test_result', 'result.csv', "test file path")
 
 image_size = 28
 image_channel = 1
@@ -28,6 +33,7 @@ label_cnt = 10
 inputs = tf.placeholder("float", [None, image_size, image_size, image_channel])
 labels = tf.placeholder("float", [None, label_cnt])
 dropout_keep_prob = tf.placeholder("float", None)
+learning_rate_ph = tf.placeholder("float", None)
 
 # conv layer 1
 conv1_weights = tf.Variable(tf.random_normal([7, 7, image_channel, 96], dtype=tf.float32, stddev=0.01))
@@ -100,47 +106,77 @@ predict = tf.argmax(logits, 1)
 accuracy = tf.reduce_mean(tf.cast(tf.equal(predict, tf.argmax(labels, 1)), tf.float32))
 
 # train
-train = tf.train.RMSPropOptimizer(FLAGS.learning_rate, FLAGS.weight_decay, FLAGS.momentum).minimize(loss)
+train = tf.train.RMSPropOptimizer(learning_rate_ph, FLAGS.rms_decay, FLAGS.rms_momentum).minimize(loss)
+# train = tf.train.MomentumOptimizer(learning_rate_ph, FLAGS.momentum).minimize(loss)
 
 # session
 init = tf.initialize_all_variables()
 sess = tf.Session()
 sess.run(init)
 
+# tf saver
+saver = tf.train.Saver()
+if os.path.isfile(FLAGS.save_name):
+    saver.restore(sess, FLAGS.save_name)
+
+total_start_time = time.time()
+
 # load mnist data
-train_images, train_labels, train_range, validation_images, validation_labels, validation_indices = loader.load_mnist_train(
-    FLAGS.validation_size, FLAGS.batch_size)
+if FLAGS.is_train:
+    train_images, train_labels, train_range, validation_images, validation_labels, validation_indices = loader.load_mnist_train(
+        FLAGS.validation_size, FLAGS.batch_size)
 
-# begin training
-train_start_time = time.time()
-total_train_len = len(train_images)
-i = 0
-for epoch in range(FLAGS.training_epoch):
-    epoch_start_time = time.time()
-    for start, end in train_range:
-        batch_start_time = time.time()
-        trainX = train_images[start:end]
-        trainY = train_labels[start:end]
-        _, loss_result = sess.run([train, loss], feed_dict={inputs: trainX, labels: trainY,
-                                                            dropout_keep_prob: FLAGS.dropout_keep_prob})
-        print('[%s][training][epoch %d, step %d exec %.2f seconds] [file: %5d ~ %5d / %5d] loss : %3.3f' % (
-            time.strftime("%Y-%m-%d %H:%M:%S"), epoch, i, (time.time() - batch_start_time), start, end,
-            total_train_len, loss_result))
+    # begin training
+    total_train_len = len(train_images)
+    i = 0
+    learning_rate = FLAGS.learning_rate
+    for epoch in range(FLAGS.training_epoch):
+        if epoch % 10 == 0 and epoch > 0:
+            learning_rate /= 10
+        epoch_start_time = time.time()
+        for start, end in train_range:
+            batch_start_time = time.time()
+            trainX = train_images[start:end]
+            trainY = train_labels[start:end]
+            _, loss_result = sess.run([train, loss], feed_dict={inputs: trainX, labels: trainY,
+                                                                dropout_keep_prob: FLAGS.dropout_keep_prob,
+                                                                learning_rate_ph: learning_rate})
+            print('[%s][training][epoch %d, step %d exec %.2f seconds] [file: %5d ~ %5d / %5d] loss : %3.10f' % (
+                time.strftime("%Y-%m-%d %H:%M:%S"), epoch, i, (time.time() - batch_start_time), start, end,
+                total_train_len, loss_result))
 
-        if i % FLAGS.validation_interval == 0 and i > 0:
-            validation_start_time = time.time()
-            shuffle_indices = loader.shuffle_validation(validation_indices, FLAGS.batch_size)
-            testX = validation_images[shuffle_indices]
-            testY = validation_labels[shuffle_indices]
-            accuracy_result, loss_result = sess.run([accuracy, loss],
-                                                    feed_dict={inputs: testX, labels: testY, dropout_keep_prob: 1.0})
-            print('[%s][test][epoch %d, step %d exec %.2f seconds] accuracy : %1.3f, loss : %3.3f' % (
-                time.strftime("%Y-%m-%d %H:%M:%S"), epoch, i, (time.time() - validation_start_time),
-                accuracy_result, loss_result))
-                
-        i += 1
+            if i % FLAGS.validation_interval == 0 and i > 0:
+                validation_start_time = time.time()
+                shuffle_indices = loader.shuffle_validation(validation_indices, FLAGS.batch_size)
+                validationX = validation_images[shuffle_indices]
+                validationY = validation_labels[shuffle_indices]
+                accuracy_result, loss_result = sess.run([accuracy, loss],
+                                                        feed_dict={inputs: validationX, labels: validationY,
+                                                                   dropout_keep_prob: 1.0})
+                print('[%s][validation][epoch %d, step %d exec %.2f seconds] accuracy : %1.3f, loss : %3.10f' % (
+                    time.strftime("%Y-%m-%d %H:%M:%S"), epoch, i, (time.time() - validation_start_time),
+                    accuracy_result, loss_result))
 
-    print("[%s][epoch exec %s seconds] epoch : %d" % (
-        time.strftime("%Y-%m-%d %H:%M:%S"), (time.time() - epoch_start_time), epoch))
+            i += 1
 
-print("[%s][total exec %s seconds" % (time.strftime("%Y-%m-%d %H:%M:%S"), (time.time() - train_start_time)))
+        print("[%s][epoch exec %s seconds] epoch : %d" % (
+            time.strftime("%Y-%m-%d %H:%M:%S"), (time.time() - epoch_start_time), epoch))
+        saver.save(sess, FLAGS.save_name)
+else:
+    i = 1
+    test_images, test_ranges = loader.load_mnist_test(FLAGS.batch_size)
+
+    test_result_file = open(FLAGS.test_result, 'wb')
+    csv_writer = csv.writer(test_result_file)
+    csv_writer.writerow(['ImageId', 'Label'])
+
+    for file_start, file_end in test_ranges:
+        testX = test_images[file_start:file_end]
+        predict_label = sess.run(predict, feed_dict={inputs: testX, dropout_keep_prob: 1.0})
+
+        for cur_predict in predict_label:
+            csv_writer.writerow([i, cur_predict])
+            print('[Result %s: %s]' % (i, cur_predict))
+            i += 1
+
+print("[%s][total exec %s seconds" % (time.strftime("%Y-%m-%d %H:%M:%S"), (time.time() - total_start_time)))
