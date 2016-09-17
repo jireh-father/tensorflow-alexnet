@@ -121,12 +121,12 @@ if os.path.isfile(FLAGS.save_name):
 
 total_start_time = time.time()
 
-# load mnist data
+# begin training
 if FLAGS.is_train:
+    # load mnist data
     train_images, train_labels, train_range, validation_images, validation_labels, validation_indices = loader.load_mnist_train(
         FLAGS.validation_size, FLAGS.batch_size)
-
-    # begin training
+    
     total_train_len = len(train_images)
     i = 0
     learning_rate = FLAGS.learning_rate
@@ -162,6 +162,7 @@ if FLAGS.is_train:
         print("[%s][epoch exec %s seconds] epoch : %d" % (
             time.strftime("%Y-%m-%d %H:%M:%S"), (time.time() - epoch_start_time), epoch))
         saver.save(sess, FLAGS.save_name)
+# begin test
 else:
     i = 1
     test_images, test_ranges = loader.load_mnist_test(FLAGS.batch_size)
