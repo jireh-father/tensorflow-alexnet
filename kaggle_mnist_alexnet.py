@@ -13,7 +13,6 @@ tf.app.flags.DEFINE_integer('validation_interval', 20, "validation interval")
 
 tf.app.flags.DEFINE_float('dropout_keep_prob', 0.5, "dropout keep prob")
 tf.app.flags.DEFINE_float('learning_rate', 0.001, "learning rate")
-tf.app.flags.DEFINE_float('rms_momentum', 0.9, "rms optimizer momentum")
 tf.app.flags.DEFINE_float('rms_decay', 0.9, "rms optimizer decay")
 tf.app.flags.DEFINE_float('weight_decay', 0.0005, "l2 regularization weight decay")
 tf.app.flags.DEFINE_string('train_path', '/tmp/train.csv', "path to download training data")
@@ -35,7 +34,7 @@ def train():
 
     accuracy = model.accuracy(logits, labels)
     loss = model.loss(logits, labels)
-    train = tf.train.RMSPropOptimizer(learning_rate, FLAGS.rms_decay, FLAGS.rms_momentum).minimize(loss)
+    train = tf.train.RMSPropOptimizer(learning_rate, FLAGS.rms_decay).minimize(loss)
 
     # session
     init = tf.initialize_all_variables()
