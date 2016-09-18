@@ -12,7 +12,7 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_integer('training_epoch', 30, "training epoch")
 tf.app.flags.DEFINE_integer('batch_size', 128, "batch size")
-tf.app.flags.DEFINE_integer('validation_interval', 20, "validation interval")
+tf.app.flags.DEFINE_integer('validation_interval', 100, "validation interval")
 
 tf.app.flags.DEFINE_float('dropout_keep_prob', 0.5, "dropout keep prob")
 tf.app.flags.DEFINE_float('learning_rate', 0.001, "learning rate")
