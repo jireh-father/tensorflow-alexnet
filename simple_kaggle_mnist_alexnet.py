@@ -99,6 +99,16 @@ logits = tf.nn.bias_add(fc3, fc3_biases)
 
 # loss
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, labels))
+# l2 regularization
+regularizers = (tf.nn.l2_loss(conv1_weights) + tf.nn.l2_loss(conv1_biases) +
+                tf.nn.l2_loss(conv2_weights) + tf.nn.l2_loss(conv2_biases) +
+                tf.nn.l2_loss(conv3_weights) + tf.nn.l2_loss(conv3_biases) +
+                tf.nn.l2_loss(conv4_weights) + tf.nn.l2_loss(conv4_biases) +
+                tf.nn.l2_loss(conv5_weights) + tf.nn.l2_loss(conv5_biases) +
+                tf.nn.l2_loss(fc1_weights) + tf.nn.l2_loss(fc1_biases) +
+                tf.nn.l2_loss(fc2_weights) + tf.nn.l2_loss(fc2_biases) +
+                tf.nn.l2_loss(fc3_weights) + tf.nn.l2_loss(fc3_biases))
+loss += FLAGS.weight_decay * regularizers
 
 # accuracy
 predict = tf.argmax(logits, 1)
