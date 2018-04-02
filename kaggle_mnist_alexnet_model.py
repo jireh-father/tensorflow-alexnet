@@ -58,14 +58,14 @@ def accuracy(logits, labels):
     # accuracy
     with tf.name_scope('accuracy'):
         accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(logits, 1), tf.argmax(labels, 1)), tf.float32))
-        tf.scalar_summary('accuracy', accuracy)
+        tf.summary.scalar('accuracy', accuracy)
     return accuracy
 
 
 def loss(logits, labels):
     with tf.name_scope('loss'):
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, labels))
-        tf.scalar_summary('loss', loss)
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels))
+        tf.summary.scalar('loss', loss)
     return loss
 
 

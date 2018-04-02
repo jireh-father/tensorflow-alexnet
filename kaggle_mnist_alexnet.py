@@ -42,9 +42,9 @@ def train():
     sess.run(init)
 
     # ready for summary
-    merged = tf.merge_all_summaries()
-    train_writer = tf.train.SummaryWriter('./summary/train', sess.graph)
-    validation_writer = tf.train.SummaryWriter('./summary/validation')
+    merged = tf.summary.merge_all()
+    train_writer = tf.summary.FileWriter('./summary/train', sess.graph)
+    validation_writer = tf.summary.FileWriter('./summary/validation')
 
     # tf saver
     saver = tf.train.Saver()
@@ -106,9 +106,9 @@ def train():
 
 def test():
     # build graph
-    inputs, labels, dropout_keep_prob, learning_rate = model.input_placeholder(FLAGS.image_size, FLAGS.image_channel,
-                                                                               FLAGS.label_cnt)
-    logits = model.inference(inputs, dropout_keep_prob)
+    inputs, labels, dropout_keep_prob, learning_rate = model.input_placeholder(image_size, image_channel,
+                                                                               label_cnt)
+    logits = model.inference(inputs, dropout_keep_prob, label_cnt)
     predict = tf.argmax(logits, 1)
 
     # session
@@ -127,7 +127,7 @@ def test():
     test_images, test_ranges = loader.load_mnist_test(FLAGS.batch_size)
 
     # ready for result file
-    test_result_file = open(FLAGS.test_result, 'wb')
+    test_result_file = open(FLAGS.test_result, 'w')
     csv_writer = csv.writer(test_result_file)
     csv_writer.writerow(['ImageId', 'Label'])
 
