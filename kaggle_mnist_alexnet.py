@@ -15,8 +15,8 @@ tf.app.flags.DEFINE_float('dropout_keep_prob', 0.5, "dropout keep prob")
 tf.app.flags.DEFINE_float('learning_rate', 0.001, "learning rate")
 tf.app.flags.DEFINE_float('rms_decay', 0.9, "rms optimizer decay")
 tf.app.flags.DEFINE_float('weight_decay', 0.0005, "l2 regularization weight decay")
-tf.app.flags.DEFINE_string('train_path', '/tmp/train.csv', "path to download training data")
-tf.app.flags.DEFINE_string('test_path', '/tmp/test.csv', "path to download test data")
+tf.app.flags.DEFINE_string('train_path', './dataset/train.csv', "path to download training data")
+tf.app.flags.DEFINE_string('test_path', './dataset/test.csv', "path to download test data")
 tf.app.flags.DEFINE_integer('validation_size', 2000, "validation size in training data")
 tf.app.flags.DEFINE_string('save_name', os.getcwd() + '/var.ckpt', "path to save variables")
 tf.app.flags.DEFINE_boolean('is_train', True, "True for train, False for test")
@@ -37,7 +37,7 @@ def train():
     train = tf.train.RMSPropOptimizer(learning_rate, FLAGS.rms_decay).minimize(loss)
 
     # session
-    init = tf.initialize_all_variables()
+    init = tf.global_variables_initializer()
     sess = tf.Session()
     sess.run(init)
 
@@ -46,8 +46,8 @@ def train():
     train_writer = tf.summary.FileWriter('./summary/train', sess.graph)
     validation_writer = tf.summary.FileWriter('./summary/validation')
 
-    # tf saver
-    saver = tf.train.Saver()
+    # tf saver, only save the last graph
+    saver = tf.train.Saver(max_to_keep=1)
     if os.path.isfile(FLAGS.save_name):
         saver.restore(sess, FLAGS.save_name)
 
@@ -102,7 +102,7 @@ def train():
     print("[%s][total exec %s seconds" % (time.strftime("%Y-%m-%d %H:%M:%S"), (time.time() - total_start_time)))
     train_writer.close()
     validation_writer.close()
-
+    sess.close()
 
 def test():
     # build graph
@@ -117,7 +117,7 @@ def test():
     sess.run(init)
 
     # tf saver
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=1)
     if os.path.isfile(FLAGS.save_name):
         saver.restore(sess, FLAGS.save_name)
 
@@ -142,7 +142,7 @@ def test():
             print('[Result %s: %s]' % (i, cur_predict))
             i += 1
     print("[%s][total exec %s seconds" % (time.strftime("%Y-%m-%d %H:%M:%S"), (time.time() - total_start_time)))
-
+    sess.close()
 
 def main(_):
     if FLAGS.is_train:

@@ -14,6 +14,7 @@ def dense_to_one_hot(labels_dense, num_classes):
     num_labels = labels_dense.shape[0]
     index_offset = np.arange(num_labels) * num_classes
     labels_one_hot = np.zeros((num_labels, num_classes))
+    #np.ndarray.flat
     labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
     return labels_one_hot
 
@@ -36,15 +37,17 @@ def load_mnist_train(validation_size=2000, batch_size=128):
     labels_flat = data.iloc[1:, 0].values.ravel()
     labels_count = np.unique(labels_flat).shape[0]
 
-    labels = dense_to_one_hot(labels_flat, labels_count)
-    labels = labels.astype(np.uint8)
+    #labels = dense_to_one_hot(labels_flat, labels_count)
+    #labels = labels.astype(np.uint8)
+    labels = tf.one_hot(labels_flat, labels_count)
 
     validation_images = images[:validation_size]
     validation_labels = labels[:validation_size]
 
     train_images = images[validation_size:]
     train_labels = labels[validation_size:]
-
+    
+    #[(0, 2000), (2000, 4000), (4000, 6000), ...]
     train_range = list(zip(range(0, len(train_images), batch_size), range(batch_size, len(train_images), batch_size)))
 
     if len(train_images) % batch_size > 0:
@@ -97,15 +100,20 @@ def download_test():
 
 
 def download(path, url):
+    '''
     if not os.path.exists(path):
         if not os.path.isdir(os.path.basename(path)):
             os.makedirs(os.path.basename(path))
-
+    '''
+    if not os.path.exists(path):
         def _progress(count, block_size, total_size):
             sys.stdout.write(
                 '\r>> Downloading %s %.1f%%' % (path, float(count * block_size) / float(total_size) * 100.0))
             sys.stdout.flush()
-
+        
+        # file_path is the local file name under which the object can be found
+        # _ is whatever the information of the downloaded file 
         file_path, _ = urllib.request.urlretrieve(url, path, _progress)
         print()
         return os.stat(file_path)
+    

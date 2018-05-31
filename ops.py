@@ -3,11 +3,11 @@ import tensorflow as tf
 
 def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_padding='SAME', stddev=0.01,
          activation_func=tf.nn.relu):
-    input_size = inputs.get_shape().as_list()[-1]
+    input_size = inputs.get_shape().as_list()[-1]  #输入通道数
     conv_weights = tf.Variable(
         tf.random_normal([kernel_size, kernel_size, input_size, output_num], dtype=tf.float32, stddev=stddev),
         name='weights')
-    conv_biases = tf.Variable(tf.constant(init_bias, shape=[output_num], dtype=tf.float32), 'biases')
+    conv_biases = tf.Variable(tf.constant(init_bias, shape=[output_num], dtype=tf.float32), name='biases')
     conv_layer = tf.nn.conv2d(inputs, conv_weights, [1, stride_size, stride_size, 1], padding=conv_padding)
     conv_layer = tf.nn.bias_add(conv_layer, conv_biases)
     if activation_func:
@@ -17,11 +17,14 @@ def conv(inputs, kernel_size, output_num, stride_size=1, init_bias=0.0, conv_pad
 
 def fc(inputs, output_size, init_bias=0.0, activation_func=tf.nn.relu, stddev=0.01):
     input_shape = inputs.get_shape().as_list()
+    #if network has no layer before fc
     if len(input_shape) == 4:
         fc_weights = tf.Variable(
             tf.random_normal([input_shape[1] * input_shape[2] * input_shape[3], output_size], dtype=tf.float32,
                              stddev=stddev),
             name='weights')
+        # pass -1 to infer the shape
+        # inputs is flatten to an 1D tensor 
         inputs = tf.reshape(inputs, [-1, fc_weights.get_shape().as_list()[0]])
     else:
         fc_weights = tf.Variable(tf.random_normal([input_shape[-1], output_size], dtype=tf.float32, stddev=stddev),

@@ -68,6 +68,7 @@ def loss(logits, labels):
         tf.summary.scalar('loss', loss)
     return loss
 
-
+'''
 def train_rms_prop(loss, learning_rate, decay=0.9, momentum=0.0, epsilon=1e-10, use_locking=False, name='RMSProp'):
     return tf.train.RMSPropOptimizer(learning_rate, decay, momentum, epsilon, use_locking, name).minimize(loss)
+'''
