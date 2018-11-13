@@ -1,5 +1,5 @@
 # Alexnet using Tensorflow
-Implemetations of alexnet using Tensorflow on mnist and cifar10.
+Implemetations of alexnet using Tensorflow on mnist.
 
 ## For train
 python kaggle_mnist_alexnet.py
